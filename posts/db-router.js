@@ -78,27 +78,57 @@ router.post("/", (req, res) => {
 // POST request to /api/posts/:id/comments
 
 router.post("/:id/comments", (req, res) => {
-    const { text } = req.body;
-    if (text) {
-        db.findById(req.params.id)
-            .then(comment => {
-                if (comment.length) {
-                    db.insertComment({ text: text, post_id: req.params.id })
-                        .then(() => {
-                            res.status(201).json({ message: req.body })
-                        })
-                        .catch(error => {
-                            console.log(error);
-                            res.status(500).json({ message: "error adding comment" })
-                        })
-                }
-                else {
-                    res.status(404)
-                        .json({ message: "The post with the specified ID doesn not exist" })
-                }
+    const { id } = req.params;
+    const comment = req.body;
+    db.findById(id)
+        .then(post => {
+            if (post.length) {
+                db.insertComment(comment)
+                    .then(comment => {
+                        res.status(200).json(comment);
+                    })
+            } else {
+                res.status(404).json({ error: "The post with the specified ID does not exist." })
+            }
+        })
+        .catch(error => {
+            res.status(500).json({ error: "Comments could not be retrieved." })
+        })
 
+});
+
+//DELETE  request for /api/posts/:id
+router.delete('/:id', (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        res.status(404).json({ error: "The post with the specified ID does not exist." })
+    }
+    db.remove(id)
+        .then(removed => {
+            res.status(200).json(removed)
+        })
+        .catch(error => {
+            res.status(500).json({ error: "The post could not be removed." })
+        })
+})
+
+///PUT request /api/posts/:id
+router.put('/:id', (req, res) => {
+    const { id } = req.params;
+    const post = req.body;
+    if (!id) {
+        res.status(404).json({ error: "The post with the specified ID does not exist." })
+    } else if (!post.title || !post.contents) {
+        res.status(400).json({ error: "Please provide a title and contents for the post." })
+    } else {
+        db.update(id, post)
+            .then(post => {
+                res.status(200).json(post);
+            })
+            .catch(error => {
+                res.status(500).json({ error: "The post information could not be modified" })
             })
     }
-});
+})
 
 module.exports = router;  //export the server
